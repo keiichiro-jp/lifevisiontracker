@@ -117,6 +117,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const saveAnswer = useCallback(async (answer: string | string[]) => {
     setLoading(true);
     try {
+      // Define the maximum number of questions
+      const MAX_QUESTIONS = 9; // 0-indexed, so 0-9 gives us 10 questions
+
       // Save the answer to the current question
       const currentQuestionIndex = data.currentQuestionIndex;
       const updatedQuestions = [...data.aiQuestions];
@@ -127,54 +130,54 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
       // Get the current question
       const currentQuestion = data.aiQuestions[currentQuestionIndex];
-
-      // Check if we've reached the maximum number of questions (10)
-      const MAX_QUESTIONS = 10;
       
-      if (currentQuestionIndex + 1 >= MAX_QUESTIONS) {
-        // If we've already asked 10 questions, don't get more
-        console.log("Reached maximum number of questions (10). Moving to completion.");
+      // Check if we're at the last question
+      if (currentQuestionIndex >= MAX_QUESTIONS) {
+        // If we've already asked 10 questions (0-9), don't get more
+        console.log(`Reached question #${currentQuestionIndex + 1}. This is the maximum. Moving to completion.`);
         setData(prev => ({
           ...prev,
+          hypothesis: prev.hypothesis, // Keep existing hypothesis
           aiQuestions: updatedQuestions,
+          currentQuestionIndex: prev.currentQuestionIndex + 1 // Still increment to show completion UI
+        }));
+        return; // Exit early
+      }
+
+      // We can ask more questions, so get the next one
+      // Prepare the request to get the next question
+      const requestData = {
+        currentHypothesis: data.hypothesis,
+        currentQuestion: currentQuestion.text,
+        userAnswer: answer
+      };
+
+      const response = await apiRequest('POST', '/api/ai/next-question', requestData);
+      const result = await response.json();
+
+      // If there's a new question to ask
+      if (result.questionData && !result.questionComplete) {
+        const newQuestion = {
+          id: result.questionData.id,
+          text: result.questionData.text,
+          selectionType: result.questionData.selectionType,
+          options: result.questionData.options
+        };
+
+        setData(prev => ({
+          ...prev,
+          hypothesis: result.hypothesis,
+          aiQuestions: [...updatedQuestions, newQuestion],
           currentQuestionIndex: prev.currentQuestionIndex + 1
         }));
       } else {
-        // We can ask more questions, so get the next one
-        // Prepare the request to get the next question
-        const requestData = {
-          currentHypothesis: data.hypothesis,
-          currentQuestion: currentQuestion.text,
-          userAnswer: answer
-        };
-
-        const response = await apiRequest('POST', '/api/ai/next-question', requestData);
-        const result = await response.json();
-
-        // If there's a new question to ask
-        if (result.questionData && !result.questionComplete) {
-          const newQuestion = {
-            id: result.questionData.id,
-            text: result.questionData.text,
-            selectionType: result.questionData.selectionType,
-            options: result.questionData.options
-          };
-
-          setData(prev => ({
-            ...prev,
-            hypothesis: result.hypothesis,
-            aiQuestions: [...updatedQuestions, newQuestion],
-            currentQuestionIndex: prev.currentQuestionIndex + 1
-          }));
-        } else {
-          // If we've reached the end of the questions
-          setData(prev => ({
-            ...prev,
-            hypothesis: result.hypothesis,
-            aiQuestions: updatedQuestions,
-            currentQuestionIndex: prev.currentQuestionIndex + 1
-          }));
-        }
+        // If we've reached the end of the questions
+        setData(prev => ({
+          ...prev,
+          hypothesis: result.hypothesis,
+          aiQuestions: updatedQuestions,
+          currentQuestionIndex: prev.currentQuestionIndex + 1
+        }));
       }
     } catch (error) {
       console.error('Error saving answer:', error);
@@ -215,7 +218,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   }, [data.hypothesis, toast]);
 
-  const isLastQuestion = data.currentQuestionIndex >= data.aiQuestions.length - 1;
+  // Consider question 10 (index 9) as the last question, regardless of API response
+  const MAX_QUESTIONS = 9;
+  const isLastQuestion = data.currentQuestionIndex >= MAX_QUESTIONS || data.currentQuestionIndex >= data.aiQuestions.length - 1;
   const isFirstQuestion = data.currentQuestionIndex === 0;
   const currentQuestion = data.aiQuestions[data.currentQuestionIndex] || null;
 

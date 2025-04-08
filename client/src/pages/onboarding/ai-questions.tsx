@@ -119,8 +119,10 @@ export default function AIQuestions() {
     return <LoadingSpinner />;
   }
 
-  // Check if we've answered all questions
-  if (data.currentQuestionIndex >= data.aiQuestions.length) {
+  // Check if we've answered all questions (either reached end of array or hit max questions)
+  const MAX_QUESTIONS = 10;
+  if (data.currentQuestionIndex >= data.aiQuestions.length || data.currentQuestionIndex >= MAX_QUESTIONS) {
+    console.log("Completed questions. Current index:", data.currentQuestionIndex, "Total questions:", data.aiQuestions.length);
     return (
       <div className="text-center py-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">
@@ -231,7 +233,8 @@ export default function AIQuestions() {
             onClick={handleAnswer}
             disabled={loading}
           >
-            {isLastQuestion ? "Final Question" : "Continue"}
+            {isLastQuestion ? "Complete Final Question" : 
+              (data.currentQuestionIndex === 8 ? "Final Question" : "Continue")}
           </Button>
         </div>
       </motion.div>
