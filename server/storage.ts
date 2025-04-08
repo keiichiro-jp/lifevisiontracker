@@ -1,4 +1,6 @@
 import { users, visionData, type User, type InsertUser, type VisionData, type InsertVisionData } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -13,56 +15,41 @@ export interface IStorage {
   getVisionDataByUserId(userId: number): Promise<VisionData | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private visionDataStore: Map<number, VisionData>;
-  private userIdToVisionIdMap: Map<number, number>;
-  currentId: number;
-  visionDataId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.visionDataStore = new Map();
-    this.userIdToVisionIdMap = new Map();
-    this.currentId = 1;
-    this.visionDataId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
   
-  async createVisionData(insertData: InsertVisionData): Promise<VisionData> {
-    const id = this.visionDataId++;
-    // Ensure visionResults is defined, even if null
-    const visionData = { 
-      ...insertData, 
-      id,
-      visionResults: insertData.visionResults || null
-    } as VisionData;
-    this.visionDataStore.set(id, visionData);
-    this.userIdToVisionIdMap.set(insertData.userId, id);
-    return visionData;
+  async createVisionData(data: InsertVisionData): Promise<VisionData> {
+    const [result] = await db
+      .insert(visionData)
+      .values(data)
+      .returning();
+    return result;
   }
-  
+
   async getVisionDataByUserId(userId: number): Promise<VisionData | undefined> {
-    const visionId = this.userIdToVisionIdMap.get(userId);
-    if (!visionId) return undefined;
-    return this.visionDataStore.get(visionId);
+    const [result] = await db
+      .select()
+      .from(visionData)
+      .where(eq(visionData.userId, userId));
+    return result || undefined;
   }
 }
 
-export const storage = new MemStorage();
+// Create an instance of the DatabaseStorage
+export const storage = new DatabaseStorage();
