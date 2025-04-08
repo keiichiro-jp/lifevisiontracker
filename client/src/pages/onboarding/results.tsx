@@ -7,7 +7,8 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { shareVision, copyToClipboard, generateShareText } from "@/lib/share";
-import { Share2, Copy, Facebook, Twitter, Linkedin, Mail } from "lucide-react";
+import { useLocation } from "wouter";
+import { Share2, Copy, Facebook, Twitter, Linkedin, Mail, ExternalLink } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 export default function Results() {
   const { data, loading, generateVision } = useOnboarding();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [showResponses, setShowResponses] = useState(false);
 
   useEffect(() => {
@@ -205,6 +207,15 @@ export default function Results() {
 
       {/* Share Button */}
       <div className="flex space-x-4 justify-center">
+        <Button 
+          variant="outline"
+          onClick={() => setLocation("/pinterest/auth")}
+          className="px-6"
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Pinterestで保存
+        </Button>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="px-6">

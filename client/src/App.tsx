@@ -14,6 +14,11 @@ import Results from "@/pages/onboarding/results";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
 import Contact from "@/pages/contact";
+
+// Pinterest関連のインポート
+import PinterestAuth from "@/pages/pinterest/auth";
+import PinterestBoards from "@/pages/pinterest/boards";
+import PinterestCallback from "@/pages/auth/pinterest-callback";
 import { OnboardingProvider } from "./hooks/useOnboardingContext";
 
 function Router() {
@@ -25,6 +30,11 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
+      
+      {/* Pinterest関連のルート */}
+      <Route path="/pinterest/auth" component={PinterestAuth} />
+      <Route path="/pinterest/boards" component={PinterestBoards} />
+      <Route path="/auth/pinterest/callback" component={PinterestCallback} />
       
       {/* Onboarding routes - flattened approach */}
       <Route path="/onboarding">
