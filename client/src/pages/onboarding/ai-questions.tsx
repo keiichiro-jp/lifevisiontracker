@@ -85,8 +85,10 @@ export default function AIQuestions() {
     try {
       console.log("Generating vision...");
       await generateVision();
-      // Update step in context and navigate
-      data.step < 4 && navigate("/onboarding/results");
+      
+      console.log("Vision generated, navigating to results page");
+      // Navigate directly to results
+      navigate("/onboarding/results");
     } catch (error) {
       console.error("Error generating vision:", error);
       toast({

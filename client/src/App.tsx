@@ -20,16 +20,30 @@ function Router() {
       <Route path="/auth/signup" component={Signup} />
       <Route path="/auth/login" component={Login} />
       
-      {/* Onboarding routes */}
+      {/* Onboarding routes - flattened approach */}
       <Route path="/onboarding">
         <OnboardingLayout>
-          <Switch>
-            <Route path="/onboarding" component={BasicInfo} />
-            <Route path="/onboarding/basic-info" component={BasicInfo} />
-            <Route path="/onboarding/questionnaire" component={Questionnaire} />
-            <Route path="/onboarding/ai-questions" component={AIQuestions} />
-            <Route path="/onboarding/results" component={Results} />
-          </Switch>
+          <BasicInfo />
+        </OnboardingLayout>
+      </Route>
+      <Route path="/onboarding/basic-info">
+        <OnboardingLayout>
+          <BasicInfo />
+        </OnboardingLayout>
+      </Route>
+      <Route path="/onboarding/questionnaire">
+        <OnboardingLayout>
+          <Questionnaire />
+        </OnboardingLayout>
+      </Route>
+      <Route path="/onboarding/ai-questions">
+        <OnboardingLayout>
+          <AIQuestions />
+        </OnboardingLayout>
+      </Route>
+      <Route path="/onboarding/results">
+        <OnboardingLayout>
+          <Results />
         </OnboardingLayout>
       </Route>
       

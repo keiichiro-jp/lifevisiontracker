@@ -36,11 +36,16 @@ export default function BasicInfo() {
   });
 
   const onSubmit = (values: FormValues) => {
+    // First - save data to context
     saveBasicInfo(values);
+    
     // Log that the data was saved
     console.log("Basic info saved:", values);
-    // Use the nextStep function from the context to update step count
-    data.step < 2 && navigate("/onboarding/questionnaire");
+    console.log("Current step:", data.step);
+    console.log("Navigating to questionnaire page");
+    
+    // Navigate to next page
+    navigate("/onboarding/questionnaire");
   };
 
   const ageOptions = [
