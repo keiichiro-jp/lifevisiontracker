@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
@@ -220,17 +220,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     progress
   };
 
-  // Using a different approach to return the provider
-  return {
-    $$typeof: Symbol.for('react.element'),
-    type: OnboardingContext.Provider,
-    props: {
-      value: contextValue,
-      children
-    },
-    key: null,
-    ref: null
-  } as any;
+  return (
+    <OnboardingContext.Provider value={contextValue}>
+      {children}
+    </OnboardingContext.Provider>
+  );
 }
 
 export function useOnboarding() {

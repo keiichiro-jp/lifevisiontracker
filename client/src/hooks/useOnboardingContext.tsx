@@ -220,17 +220,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     progress
   };
 
-  // Using a different approach to return the provider
-  return {
-    $$typeof: Symbol.for('react.element'),
-    type: OnboardingContext.Provider,
-    props: {
-      value: contextValue,
-      children
-    },
-    key: null,
-    ref: null
-  } as any;
+  return (
+    <OnboardingContext.Provider value={contextValue}>
+      {children}
+    </OnboardingContext.Provider>
+  );
 }
 
 export function useOnboarding() {
