@@ -92,7 +92,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error generating initial hypothesis:", error);
-      res.status(500).json({ message: "Failed to generate initial hypothesis", error: error.message });
+      res.status(500).json({ 
+        message: "Failed to generate initial hypothesis", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 
@@ -103,7 +106,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error generating next question:", error);
-      res.status(500).json({ message: "Failed to generate next question", error: error.message });
+      res.status(500).json({ 
+        message: "Failed to generate next question", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -114,7 +120,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error generating final vision:", error);
-      res.status(500).json({ message: "Failed to generate final vision", error: error.message });
+      res.status(500).json({ 
+        message: "Failed to generate final vision", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Community platform routes
+  
+  // Update vision data public status
+  app.patch('/api/vision/:id/public', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { isPublic } = req.body;
+      
+      if (typeof isPublic !== 'boolean') {
+        return res.status(400).json({ message: "isPublic must be a boolean value" });
+      }
+      
+      const updatedVision = await storage.updateVisionPublicStatus(id, isPublic);
+      res.status(200).json(updatedVision);
+    } catch (error) {
+      console.error("Error updating vision public status:", error);
+      res.status(500).json({ message: "Failed to update vision public status" });
+    }
+  });
+  
+  // Share a vision to community
+  app.post('/api/community/visions', async (req, res) => {
+    try {
+      const { userId, visionId, title, keyMessage, visionSummary } = req.body;
+      
+      // Validate input
+      if (!userId || !visionId || !title || !keyMessage || !visionSummary) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const sharedVision = await storage.createSharedVision({
+        userId,
+        visionId,
+        title,
+        keyMessage,
+        visionSummary
+      });
+      
+      res.status(201).json(sharedVision);
+    } catch (error) {
+      console.error("Error sharing vision:", error);
+      res.status(500).json({ message: "Failed to share vision" });
+    }
+  });
+  
+  // Get all shared visions with pagination
+  app.get('/api/community/visions', async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      
+      const sharedVisions = await storage.getSharedVisions(limit, offset);
+      res.status(200).json(sharedVisions);
+    } catch (error) {
+      console.error("Error getting shared visions:", error);
+      res.status(500).json({ message: "Failed to get shared visions" });
+    }
+  });
+  
+  // Get a specific shared vision by ID
+  app.get('/api/community/visions/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const sharedVision = await storage.getSharedVisionById(id);
+      
+      if (!sharedVision) {
+        return res.status(404).json({ message: "Shared vision not found" });
+      }
+      
+      // Increment view count
+      await storage.incrementSharedVisionViews(id);
+      
+      res.status(200).json(sharedVision);
+    } catch (error) {
+      console.error("Error getting shared vision:", error);
+      res.status(500).json({ message: "Failed to get shared vision" });
+    }
+  });
+  
+  // Get all shared visions for a specific user
+  app.get('/api/community/users/:userId/visions', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const sharedVisions = await storage.getSharedVisionsByUserId(userId);
+      res.status(200).json(sharedVisions);
+    } catch (error) {
+      console.error("Error getting user's shared visions:", error);
+      res.status(500).json({ message: "Failed to get user's shared visions" });
+    }
+  });
+  
+  // Add a comment to a shared vision
+  app.post('/api/community/visions/:id/comments', async (req, res) => {
+    try {
+      const sharedVisionId = parseInt(req.params.id);
+      const { userId, content } = req.body;
+      
+      if (!userId || !content) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const comment = await storage.createVisionComment({
+        sharedVisionId,
+        userId,
+        content
+      });
+      
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      res.status(500).json({ message: "Failed to add comment" });
+    }
+  });
+  
+  // Get all comments for a shared vision
+  app.get('/api/community/visions/:id/comments', async (req, res) => {
+    try {
+      const sharedVisionId = parseInt(req.params.id);
+      const comments = await storage.getVisionCommentsBySharedVisionId(sharedVisionId);
+      res.status(200).json(comments);
+    } catch (error) {
+      console.error("Error getting comments:", error);
+      res.status(500).json({ message: "Failed to get comments" });
+    }
+  });
+  
+  // Like a shared vision
+  app.post('/api/community/visions/:id/like', async (req, res) => {
+    try {
+      const sharedVisionId = parseInt(req.params.id);
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "Missing userId" });
+      }
+      
+      // Check if user has already liked this vision
+      const hasLiked = await storage.hasUserLikedVision(sharedVisionId, userId);
+      
+      if (hasLiked) {
+        // User already liked this vision, so remove the like
+        await storage.deleteVisionLike(sharedVisionId, userId);
+        res.status(200).json({ liked: false });
+      } else {
+        // User hasn't liked this vision yet, so add a like
+        await storage.createVisionLike({
+          sharedVisionId,
+          userId
+        });
+        res.status(201).json({ liked: true });
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      res.status(500).json({ message: "Failed to toggle like" });
+    }
+  });
+  
+  // Check if a user has liked a shared vision
+  app.get('/api/community/visions/:id/like/:userId', async (req, res) => {
+    try {
+      const sharedVisionId = parseInt(req.params.id);
+      const userId = parseInt(req.params.userId);
+      
+      const hasLiked = await storage.hasUserLikedVision(sharedVisionId, userId);
+      res.status(200).json({ liked: hasLiked });
+    } catch (error) {
+      console.error("Error checking like status:", error);
+      res.status(500).json({ message: "Failed to check like status" });
     }
   });
 

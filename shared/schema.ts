@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,6 +7,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull().unique(),
+  displayName: text("display_name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const visionData = pgTable("vision_data", {
@@ -16,7 +18,36 @@ export const visionData = pgTable("vision_data", {
   questionnaire: jsonb("questionnaire").notNull(), // interests, challenges, etc.
   aiQuestions: jsonb("ai_questions").notNull(), // AI follow-up questions and answers
   visionResults: jsonb("vision_results"), // The final vision results
+  keyMessage: text("key_message"),
+  isPublic: boolean("is_public").default(false),
   createdAt: text("created_at").notNull(), // ISO date string
+});
+
+export const sharedVisions = pgTable("shared_visions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  visionId: integer("vision_id").notNull(),
+  title: text("title").notNull(),
+  keyMessage: text("key_message").notNull(),
+  visionSummary: jsonb("vision_summary").notNull(), // Simplified version of visionResults
+  likes: integer("likes").default(0),
+  views: integer("views").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const visionComments = pgTable("vision_comments", {
+  id: serial("id").primaryKey(),
+  sharedVisionId: integer("shared_vision_id").notNull(),
+  userId: integer("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const visionLikes = pgTable("vision_likes", {
+  id: serial("id").primaryKey(),
+  sharedVisionId: integer("shared_vision_id").notNull(),
+  userId: integer("user_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Types
@@ -97,7 +128,44 @@ export const visionResultSchema = z.object({
   content: z.string(),
 });
 
+// Community schemas
+export const sharedVisionSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  keyMessage: z.string().min(5, "Key message is required"),
+  visionSummary: z.array(visionResultSchema).min(1, "At least one vision is required"),
+});
+
+export const visionCommentSchema = z.object({
+  content: z.string().min(3, "Comment must be at least 3 characters"),
+});
+
+// Insert schemas for new tables
+export const insertSharedVisionSchema = createInsertSchema(sharedVisions).pick({
+  userId: true,
+  visionId: true,
+  title: true,
+  keyMessage: true,
+  visionSummary: true,
+});
+
+export const insertVisionCommentSchema = createInsertSchema(visionComments).pick({
+  sharedVisionId: true,
+  userId: true,
+  content: true,
+});
+
+export const insertVisionLikeSchema = createInsertSchema(visionLikes).pick({
+  sharedVisionId: true,
+  userId: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertVisionData = z.infer<typeof insertVisionDataSchema>;
 export type VisionData = typeof visionData.$inferSelect;
+export type InsertSharedVision = z.infer<typeof insertSharedVisionSchema>;
+export type SharedVision = typeof sharedVisions.$inferSelect;
+export type InsertVisionComment = z.infer<typeof insertVisionCommentSchema>;
+export type VisionComment = typeof visionComments.$inferSelect;
+export type InsertVisionLike = z.infer<typeof insertVisionLikeSchema>;
+export type VisionLike = typeof visionLikes.$inferSelect;
