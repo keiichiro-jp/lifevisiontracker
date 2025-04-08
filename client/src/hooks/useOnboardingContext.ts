@@ -9,6 +9,7 @@ import {
   OnboardingData, 
   VisionResult 
 } from '@/lib/types';
+import React from 'react';
 
 const defaultBasicInfo: BasicInfoData = {
   ageRange: '',
@@ -54,7 +55,7 @@ type OnboardingContextType = {
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
+export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<OnboardingData>(initialOnboardingState);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -225,9 +226,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     { value: contextValue },
     children
   );
-};
+}
 
-export const useOnboarding = () => {
+export function useOnboarding() {
   const context = useContext(OnboardingContext);
   
   if (context === undefined) {
@@ -235,4 +236,4 @@ export const useOnboarding = () => {
   }
   
   return context;
-};
+}

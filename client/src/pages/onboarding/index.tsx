@@ -3,7 +3,7 @@ import { Eye, User } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import ProgressIndicator from "@/components/ProgressIndicator";
-import { useOnboarding } from "@/hooks/useOnboarding";
+import { useOnboarding } from "@/hooks/useOnboarding.tsx";
 import { Button } from "@/components/ui/button";
 
 interface OnboardingLayoutProps {

@@ -10,6 +10,7 @@ import {
   VisionResult 
 } from '@/lib/types';
 
+// Default values for the basic info form
 const defaultBasicInfo: BasicInfoData = {
   ageRange: '',
   gender: '',
@@ -18,6 +19,7 @@ const defaultBasicInfo: BasicInfoData = {
   location: ''
 };
 
+// Default values for the questionnaire
 const defaultQuestionnaire: QuestionnaireData = {
   interests: [],
   challenges: [],
@@ -25,6 +27,7 @@ const defaultQuestionnaire: QuestionnaireData = {
   otherChallenges: ''
 };
 
+// Initial state for the onboarding process
 const initialOnboardingState: OnboardingData = {
   step: 1,
   basicInfo: defaultBasicInfo,
@@ -36,6 +39,7 @@ const initialOnboardingState: OnboardingData = {
   keyMessage: null
 };
 
+// Type definition for the context
 type OnboardingContextType = {
   data: OnboardingData;
   saveBasicInfo: (data: BasicInfoData) => void;
@@ -52,30 +56,37 @@ type OnboardingContextType = {
   progress: number;
 };
 
+// Create the context
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
+// Provider component
+export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<OnboardingData>(initialOnboardingState);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
+  // Navigate to next step
   const nextStep = useCallback(() => {
     setData(prev => ({ ...prev, step: prev.step + 1 }));
   }, []);
 
+  // Navigate to previous step
   const prevStep = useCallback(() => {
     setData(prev => ({ ...prev, step: Math.max(1, prev.step - 1) }));
   }, []);
 
+  // Save basic info data
   const saveBasicInfo = useCallback((basicInfo: BasicInfoData) => {
     setData(prev => ({ ...prev, basicInfo }));
   }, []);
 
+  // Save questionnaire data
   const saveQuestionnaire = useCallback((questionnaire: QuestionnaireData) => {
     setData(prev => ({ ...prev, questionnaire }));
   }, []);
 
+  // Initialize AI questions based on user data
   const initAIQuestions = useCallback(async () => {
     setLoading(true);
     try {
@@ -112,6 +123,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [data.basicInfo, data.questionnaire, toast]);
 
+  // Save an answer and get the next question
   const saveAnswer = useCallback(async (answer: string | string[]) => {
     setLoading(true);
     try {
@@ -172,6 +184,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [data.aiQuestions, data.currentQuestionIndex, data.hypothesis, toast]);
 
+  // Generate the final vision based on all collected data
   const generateVision = useCallback(async () => {
     setLoading(true);
     try {
@@ -197,6 +210,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [data.hypothesis, toast]);
 
+  // Derived state
   const isLastQuestion = data.currentQuestionIndex >= data.aiQuestions.length - 1;
   const isFirstQuestion = data.currentQuestionIndex === 0;
   const currentQuestion = data.aiQuestions[data.currentQuestionIndex] || null;
@@ -204,6 +218,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   // Calculate progress (1-100)
   const progress = Math.min(100, Math.max(0, (data.step / 4) * 100));
 
+  // Create the context value object
   const contextValue = {
     data,
     saveBasicInfo,
@@ -220,14 +235,16 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     progress
   };
 
-  return React.createElement(
-    OnboardingContext.Provider,
-    { value: contextValue },
-    children
+  // Render the provider with its value
+  return (
+    <OnboardingContext.Provider value={contextValue}>
+      {children}
+    </OnboardingContext.Provider>
   );
-};
+}
 
-export const useOnboarding = () => {
+// Custom hook to use the context
+export function useOnboarding() {
   const context = useContext(OnboardingContext);
   
   if (context === undefined) {
@@ -235,4 +252,4 @@ export const useOnboarding = () => {
   }
   
   return context;
-};
+}

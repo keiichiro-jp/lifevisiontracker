@@ -11,7 +11,7 @@ import BasicInfo from "@/pages/onboarding/basic-info";
 import Questionnaire from "@/pages/onboarding/questionnaire";
 import AIQuestions from "@/pages/onboarding/ai-questions";
 import Results from "@/pages/onboarding/results";
-import { OnboardingProvider } from "@/hooks/useOnboarding";
+import { OnboardingProvider } from "@/hooks/useOnboardingContext";
 
 function Router() {
   return (
@@ -22,17 +22,15 @@ function Router() {
       
       {/* Onboarding routes */}
       <Route path="/onboarding">
-        <OnboardingProvider>
-          <OnboardingLayout>
-            <Switch>
-              <Route path="/onboarding" component={BasicInfo} />
-              <Route path="/onboarding/basic-info" component={BasicInfo} />
-              <Route path="/onboarding/questionnaire" component={Questionnaire} />
-              <Route path="/onboarding/ai-questions" component={AIQuestions} />
-              <Route path="/onboarding/results" component={Results} />
-            </Switch>
-          </OnboardingLayout>
-        </OnboardingProvider>
+        <OnboardingLayout>
+          <Switch>
+            <Route path="/onboarding" component={BasicInfo} />
+            <Route path="/onboarding/basic-info" component={BasicInfo} />
+            <Route path="/onboarding/questionnaire" component={Questionnaire} />
+            <Route path="/onboarding/ai-questions" component={AIQuestions} />
+            <Route path="/onboarding/results" component={Results} />
+          </Switch>
+        </OnboardingLayout>
       </Route>
       
       {/* Fallback to 404 */}
@@ -44,8 +42,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <OnboardingProvider>
+        <Router />
+        <Toaster />
+      </OnboardingProvider>
     </QueryClientProvider>
   );
 }

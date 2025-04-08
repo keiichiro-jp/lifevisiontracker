@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOnboarding } from "@/hooks/useOnboarding";
+import { useOnboarding } from "@/hooks/useOnboardingContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Results() {
-  const { data, loading } = useOnboarding();
+  const { data, loading, generateVision } = useOnboarding();
   const { toast } = useToast();
   const [showResponses, setShowResponses] = useState(false);
 
@@ -25,7 +25,7 @@ export default function Results() {
     if (!data.visionResults && data.hypothesis) {
       const generateVisionResults = async () => {
         try {
-          await data.generateVision();
+          await generateVision();
         } catch (error) {
           console.error("Error generating vision:", error);
           toast({
@@ -38,7 +38,7 @@ export default function Results() {
       
       generateVisionResults();
     }
-  }, []);
+  }, [data.visionResults, data.hypothesis, generateVision, toast]);
 
   const handleShare = (platform: 'twitter' | 'facebook' | 'linkedin' | 'email') => {
     if (data.visionResults && data.keyMessage) {
