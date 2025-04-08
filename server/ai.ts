@@ -18,7 +18,8 @@ ${JSON.stringify(userData, null, 2)}
 Based on this information:
 1) Create a hypothesis about the user's potential values, interests, and challenges.
 2) Generate ONE follow-up question to help understand the user better.
-3) The question should include multiple choice options or request a text response.
+3) The question MUST be multiple-choice with 4-6 specific options (never use free text input).
+4) Make options concrete and specific to the user's context, avoid generic options.
 
 Format the response as a JSON object with the following structure:
 {
@@ -31,10 +32,12 @@ Format the response as a JSON object with the following structure:
   "question": {
     "id": "unique question identifier",
     "text": "the question text",
-    "selectionType": "single" or "multiple" or "text",
-    "options": ["array of options if applicable"]
+    "selectionType": "single" or "multiple", 
+    "options": ["4-6 specific multiple choice options"]
   }
 }
+
+Note: Always use "single" or "multiple" for selectionType. Never use "text" as we want all questions to be multiple choice.
 `;
 
     const response = await openai.chat.completions.create({
@@ -44,6 +47,9 @@ Format the response as a JSON object with the following structure:
     });
 
     const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("OpenAI response was empty");
+    }
     const parsedResponse = JSON.parse(content);
     
     return {
@@ -71,8 +77,9 @@ The user's answer: ${typeof userAnswer === 'string' ? `"${userAnswer}"` : JSON.s
 Based on this information:
 1) Update the hypothesis about the user.
 2) Generate ONE new follow-up question to further understand the user.
-3) The new question should build upon previous knowledge and explore a new aspect.
-4) If you have gathered sufficient information, set questionComplete to true.
+3) The question MUST be multiple-choice with 4-6 specific options (never use free text input).
+4) Make options concrete and specific to the user's context, avoiding generic options.
+5) If you have gathered sufficient information (after approximately 10 questions), set questionComplete to true.
 
 Format the response as a JSON object with the following structure:
 {
@@ -85,11 +92,13 @@ Format the response as a JSON object with the following structure:
   "question": {
     "id": "unique question identifier",
     "text": "the question text",
-    "selectionType": "single" or "multiple" or "text",
-    "options": ["array of options if applicable"]
+    "selectionType": "single" or "multiple",
+    "options": ["4-6 specific multiple choice options"]
   },
   "questionComplete": false
 }
+
+Note: Always use "single" or "multiple" for selectionType. Never use "text" as we want all questions to be multiple choice.
 `;
 
     const response = await openai.chat.completions.create({
@@ -99,6 +108,9 @@ Format the response as a JSON object with the following structure:
     });
 
     const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("OpenAI response was empty");
+    }
     const parsedResponse = JSON.parse(content);
     
     return {
@@ -164,6 +176,9 @@ Notes on colors:
     });
 
     const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("OpenAI response was empty");
+    }
     return JSON.parse(content);
   } catch (error) {
     console.error("Error generating final vision:", error);
