@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -19,6 +20,11 @@ import Contact from "@/pages/contact";
 import PinterestAuth from "@/pages/pinterest/auth";
 import PinterestBoards from "@/pages/pinterest/boards";
 import PinterestCallback from "@/pages/auth/pinterest-callback";
+
+// コミュニティページの動的インポート
+const CommunityPage = React.lazy(() => import("@/pages/community/index"));
+const CommunityVisionDetailPage = React.lazy(() => import("@/pages/community/vision/[id]"));
+const CommunitySharePage = React.lazy(() => import("@/pages/community/share"));
 import { OnboardingProvider } from "./hooks/useOnboardingContext";
 
 function Router() {
@@ -35,6 +41,23 @@ function Router() {
       <Route path="/pinterest/auth" component={PinterestAuth} />
       <Route path="/pinterest/boards" component={PinterestBoards} />
       <Route path="/auth/pinterest/callback" component={PinterestCallback} />
+      
+      {/* コミュニティ関連のルート */}
+      <Route path="/community">
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">読み込み中...</div>}>
+          <CommunityPage />
+        </Suspense>
+      </Route>
+      <Route path="/community/vision/:id">
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">読み込み中...</div>}>
+          <CommunityVisionDetailPage />
+        </Suspense>
+      </Route>
+      <Route path="/community/share">
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">読み込み中...</div>}>
+          <CommunitySharePage />
+        </Suspense>
+      </Route>
       
       {/* Onboarding routes - flattened approach */}
       <Route path="/onboarding">

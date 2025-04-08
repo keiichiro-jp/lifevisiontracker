@@ -1,56 +1,85 @@
-import { VisionResult } from './types';
-
 type SharePlatform = 'twitter' | 'facebook' | 'linkedin' | 'email';
 
-export function generateShareText(keyMessage: string, visions: VisionResult[]): string {
-  const visionTitles = visions.map(v => v.title).join(', ');
-  return `My Life Vision: ${keyMessage}\n\nKey areas: ${visionTitles}\n\nGenerated with Life Vision App`;
+// VisionResultの型定義
+interface VisionResult {
+  category: string;
+  title: string;
+  color: string;
+  content: string;
 }
 
+/**
+ * ビジョン共有用のテキストを生成
+ */
+export function generateShareText(keyMessage: string, visions: VisionResult[]): string {
+  let text = `${keyMessage}\n\n`;
+  
+  visions.forEach(vision => {
+    text += `✦ ${vision.title}: ${vision.content}\n`;
+  });
+  
+  text += "\n#LifeVision #人生ビジョン";
+  
+  return text;
+}
+
+/**
+ * 各種SNSプラットフォームでビジョンを共有
+ */
 export function shareVision(platform: SharePlatform, keyMessage: string, visions: VisionResult[]): void {
   const shareText = encodeURIComponent(generateShareText(keyMessage, visions));
-  const url = encodeURIComponent(window.location.href);
+  const appTitle = encodeURIComponent("LifeVision - 自分の人生のビジョンを描く");
   
-  let shareUrl = '';
+  let shareUrl = "";
   
   switch (platform) {
     case 'twitter':
-      shareUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${url}`;
+      shareUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
       break;
     case 'facebook':
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${shareText}`;
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${window.location.href}&quote=${shareText}`;
       break;
     case 'linkedin':
-      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+      shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${window.location.href}&title=${appTitle}&summary=${shareText}`;
       break;
     case 'email':
-      shareUrl = `mailto:?subject=My Life Vision&body=${shareText}%0A%0A${url}`;
+      shareUrl = `mailto:?subject=${appTitle}&body=${shareText}`;
       break;
-    default:
-      return;
   }
   
-  window.open(shareUrl, '_blank', 'noopener,noreferrer');
+  // 新しいウィンドウでシェアURLを開く
+  if (shareUrl) {
+    window.open(shareUrl, '_blank');
+  }
 }
 
+/**
+ * テキストをクリップボードにコピー
+ */
 export function copyToClipboard(text: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (navigator.clipboard) {
+  return new Promise((resolve, reject) => {
+    try {
       navigator.clipboard.writeText(text)
         .then(() => resolve(true))
-        .catch(() => resolve(false));
-    } else {
+        .catch(err => {
+          console.error('Could not copy text: ', err);
+          reject(err);
+        });
+    } catch (err) {
+      // Fallback for older browsers
       try {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        resolve(true);
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        resolve(successful);
       } catch (err) {
-        resolve(false);
+        console.error('Could not copy text: ', err);
+        reject(err);
       }
     }
   });

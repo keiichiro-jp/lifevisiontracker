@@ -15,17 +15,22 @@ export default function Home() {
             <Eye className="w-8 h-8 text-primary" />
             <h1 className="ml-2 text-xl font-semibold text-gray-900">Life Vision</h1>
           </div>
-          <div className="flex space-x-2">
-            <Link href="/auth/login">
-              <Button variant="outline" size="sm" className="text-sm">
-                Log In
-              </Button>
+          <div className="flex items-center space-x-4">
+            <Link href="/community" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              コミュニティ
             </Link>
-            <Link href="/auth/signup">
-              <Button variant="default" size="sm" className="text-sm">
-                Sign Up
-              </Button>
-            </Link>
+            <div className="flex space-x-2">
+              <Link href="/auth/login">
+                <Button variant="outline" size="sm" className="text-sm">
+                  Log In
+                </Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button variant="default" size="sm" className="text-sm">
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>

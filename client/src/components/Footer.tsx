@@ -12,6 +12,9 @@ export default function Footer() {
           </p>
         </div>
         <nav className="flex gap-4 sm:gap-6">
+          <Link href="/community" className="text-sm font-medium hover:underline">
+            コミュニティ
+          </Link>
           <Link href="/privacy-policy" className="text-sm font-medium hover:underline">
             プライバシーポリシー
           </Link>
