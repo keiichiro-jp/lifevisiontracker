@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '../hooks/use-toast';
 import { useLocation } from 'wouter';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest } from '../lib/queryClient';
 import { 
   BasicInfoData, 
   QuestionnaireData, 
   AIQuestion, 
   OnboardingData, 
   VisionResult 
-} from '@/lib/types';
+} from '../lib/types';
 
 const defaultBasicInfo: BasicInfoData = {
   ageRange: '',

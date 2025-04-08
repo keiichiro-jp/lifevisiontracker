@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useOnboarding } from "@/hooks/useOnboardingContext";
+import { useOnboarding } from "../../hooks/useOnboardingContext";
 import { Button } from "@/components/ui/button";
 import { RadioCardGroup } from "@/components/ui/radio-card";
 import { MultiCardGroup } from "@/components/ui/multi-card";

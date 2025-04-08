@@ -11,7 +11,7 @@ import BasicInfo from "@/pages/onboarding/basic-info";
 import Questionnaire from "@/pages/onboarding/questionnaire";
 import AIQuestions from "@/pages/onboarding/ai-questions";
 import Results from "@/pages/onboarding/results";
-import { OnboardingProvider } from "@/hooks/useOnboardingContext";
+import { OnboardingProvider } from "./hooks/useOnboardingContext";
 
 function Router() {
   return (

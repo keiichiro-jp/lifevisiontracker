@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOnboarding } from "@/hooks/useOnboardingContext";
+import { useOnboarding } from "../../hooks/useOnboardingContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
