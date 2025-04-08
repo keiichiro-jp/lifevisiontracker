@@ -1,0 +1,533 @@
+以下が「順番に質問→AIが仮説更新→ビジョン生成」の一連のフローを実現する App Router 構成サンプルです。あくまで「動くイメージ」を示すための簡易コードなので、実際のプロジェクトで使う際は適宜UIや型定義を調整してください。
+
+ディレクトリ構成 (サンプル)
+
+life-vision-app/
+└── src/
+    ├── app/
+    │   ├── onboarding/
+    │   │   ├── page.tsx               # (1) Intro画面
+    │   │   ├── questionnaire/
+    │   │   │   └── page.tsx           # (2) 問診票ページ
+    │   │   ├── additional/
+    │   │   │   └── page.tsx           # (3) AI追加質問ページ (1問ずつ)
+    │   │   └── result/
+    │   │       └── page.tsx           # (4) 最終ビジョン結果ページ
+    │   ├── api/
+    │   │   └── ai/
+    │   │       ├── init-hypothesis/
+    │   │       │   └── route.ts       # /api/ai/init-hypothesis
+    │   │       ├── next-question/
+    │   │       │   └── route.ts       # /api/ai/next-question
+    │   │       └── final-vision/
+    │   │           └── route.ts       # /api/ai/final-vision
+    │   └── layout.tsx                 # レイアウト
+    └── ...
+
+(1) Onboarding Intro: src/app/onboarding/page.tsx
+
+'use client'
+
+import { useRouter } from 'next/navigation'
+
+export default function OnboardingIntro() {
+  const router = useRouter()
+
+  const handleStart = () => {
+    router.push('/onboarding/questionnaire')
+  }
+
+  return (
+    <div className="p-8 max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-4">ようこそ！</h1>
+      <p className="mb-4">
+        これから簡単な問診票に答えていただき、<br/>
+        AIがあなた専用のビジョンストーリーを紡ぎ出します。
+      </p>
+      <button
+        onClick={handleStart}
+        className="px-4 py-2 bg-blue-600 text-white rounded"
+      >
+        はじめる
+      </button>
+    </div>
+  )
+}
+
+(2) 問診票ページ: src/app/onboarding/questionnaire/page.tsx
+
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function QuestionnairePage() {
+  const router = useRouter()
+  const [ageRange, setAgeRange] = useState('')
+  const [family, setFamily] = useState<string[]>([])
+  const [interests, setInterests] = useState<string[]>([])
+  const [problems, setProblems] = useState<string[]>([])
+
+  const toggleValue = (
+    current: string[],
+    value: string,
+    setter: (vals: string[]) => void
+  ) => {
+    if (current.includes(value)) {
+      setter(current.filter((v) => v !== value))
+    } else {
+      setter([...current, value])
+    }
+  }
+
+  const handleSubmit = () => {
+    const userData = {
+      ageRange,
+      family,
+      interests,
+      problems,
+    }
+    // SessionStorageに保存
+    sessionStorage.setItem('basicQuestionnaire', JSON.stringify(userData))
+    router.push('/onboarding/additional')
+  }
+
+  return (
+    <div className="p-4 max-w-md mx-auto">
+      <h2 className="text-xl font-bold mb-4">問診票</h2>
+
+      {/* 年齢層 (ラジオ) */}
+      <div className="mb-4">
+        <p className="font-semibold">年齢層は？</p>
+        {['10代','20代','30代','40代','50代','60代以上'].map(opt => (
+          <label key={opt} className="block">
+            <input
+              type="radio"
+              value={opt}
+              checked={ageRange === opt}
+              onChange={() => setAgeRange(opt)}
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+
+      {/* 家族構成 (複数選択) */}
+      <div className="mb-4">
+        <p className="font-semibold">家族構成</p>
+        {['一人暮らし','夫婦のみ','子どもがいる','親と同居','その他'].map(opt => (
+          <label key={opt} className="block">
+            <input
+              type="checkbox"
+              value={opt}
+              checked={family.includes(opt)}
+              onChange={() => toggleValue(family, opt, setFamily)}
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+
+      {/* 関心ごと (複数選択) */}
+      <div className="mb-4">
+        <p className="font-semibold">関心ごと</p>
+        {['副業','起業','健康','子育て','資格取得','投資','その他'].map(opt => (
+          <label key={opt} className="block">
+            <input
+              type="checkbox"
+              value={opt}
+              checked={interests.includes(opt)}
+              onChange={() => toggleValue(interests, opt, setInterests)}
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+
+      {/* 悩み・課題 (複数選択) */}
+      <div className="mb-4">
+        <p className="font-semibold">悩み・課題</p>
+        {['将来不安','仕事マンネリ','家事との両立','金銭面','自信がない','その他'].map(opt => (
+          <label key={opt} className="block">
+            <input
+              type="checkbox"
+              value={opt}
+              checked={problems.includes(opt)}
+              onChange={() => toggleValue(problems, opt, setProblems)}
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        className="px-4 py-2 bg-blue-600 text-white rounded"
+      >
+        次へ
+      </button>
+    </div>
+  )
+}
+
+(3) AI追加質問ページ: src/app/onboarding/additional/page.tsx
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function AdditionalQuestions() {
+  const router = useRouter()
+  const [question, setQuestion] = useState('')
+  const [hypothesis, setHypothesis] = useState<any>({})
+  const [answer, setAnswer] = useState('')
+  const [step, setStep] = useState(0) // 質問ステップ
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const userDataStr = sessionStorage.getItem('basicQuestionnaire')
+    if (!userDataStr) {
+      router.push('/onboarding/questionnaire')
+      return
+    }
+    initHypothesis(JSON.parse(userDataStr))
+  }, [router])
+
+  async function initHypothesis(userData: any) {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/ai/init-hypothesis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      })
+      const data = await res.json()
+      setHypothesis(data.hypothesis || {})
+      setQuestion(data.question || '')
+    } catch (err) {
+      console.error(err)
+    }
+    setLoading(false)
+  }
+
+  async function handleNext() {
+    if (!question) {
+      // 質問がもう無い → 次へ
+      sessionStorage.setItem('finalHypothesis', JSON.stringify(hypothesis))
+      router.push('/onboarding/result')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/ai/next-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentHypothesis: hypothesis,
+          currentQuestion: question,
+          userAnswer: answer,
+        }),
+      })
+      const data = await res.json()
+      setHypothesis(data.hypothesis || {})
+      setQuestion(data.question || '')
+      setAnswer('')
+      setStep(step + 1)
+
+      if (!data.question) {
+        // 質問が空 → 終了
+        sessionStorage.setItem('finalHypothesis', JSON.stringify(data.hypothesis))
+        router.push('/onboarding/result')
+      }
+    } catch (err) {
+      console.error(err)
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="p-4 max-w-md mx-auto">
+      <h2 className="text-xl font-bold mb-4">追加質問 (Step {step})</h2>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <>
+          {question ? (
+            <>
+              <p className="font-semibold mb-2">{question}</p>
+              {/* 実際は選択肢のUIなどもAIに生成させても面白い */}
+              <textarea
+                value={answer}
+                onChange={e => setAnswer(e.target.value)}
+                className="w-full border p-2 mb-4"
+              />
+            </>
+          ) : (
+            <p>これ以上質問はありません。</p>
+          )}
+
+          <button
+            onClick={handleNext}
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+          >
+            {question ? '回答して次へ' : '結果を見る'}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+(4) 最終ビジョン結果ページ: src/app/onboarding/result/page.tsx
+
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function FinalResultPage() {
+  const router = useRouter()
+  const [vision, setVision] = useState<{ keyMessage: string; details: string } | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const hypoStr = sessionStorage.getItem('finalHypothesis')
+    if (!hypoStr) {
+      router.push('/onboarding/additional')
+      return
+    }
+    const finalHypothesis = JSON.parse(hypoStr)
+    generateVision(finalHypothesis)
+  }, [router])
+
+  async function generateVision(hypo: any) {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/ai/final-vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ finalHypothesis: hypo }),
+      })
+      const data = await res.json()
+      setVision(data)
+    } catch (err) {
+      console.error(err)
+    }
+    setLoading(false)
+  }
+
+  if (loading) return <div className="p-4">ビジョン生成中...</div>
+  if (!vision) return <div className="p-4">結果を読み込み中...</div>
+
+  return (
+    <div className="p-4 max-w-md mx-auto">
+      <h2 className="text-xl font-bold mb-4">あなたのビジョン</h2>
+      <p className="font-semibold mb-2">{vision.keyMessage}</p>
+      <p className="whitespace-pre-line leading-relaxed">
+        {vision.details}
+      </p>
+    </div>
+  )
+}
+
+(API) /api/ai フォルダ内
+
+(A) init-hypothesis: src/app/api/ai/init-hypothesis/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function POST(req: NextRequest) {
+  try {
+    const userData = await req.json()
+
+    const prompt = `
+あなたはインタビュアーです。
+ユーザーの基本回答はこちら:
+${JSON.stringify(userData, null, 2)}
+
+1) まずユーザーが持っていそうな価値観や興味を仮説(hypothesis)としてまとめて
+2) その仮説を検証するための最初の質問(question)を1つ提案してください
+
+出力を以下のJSON形式で:
+{
+  "hypothesis": {...},
+  "question": "string"
+}
+    `
+
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 400,
+      }),
+    })
+
+    const data = await openaiRes.json()
+    if (!openaiRes.ok) {
+      console.error('OpenAI error:', data)
+      return NextResponse.json({ hypothesis: {}, question: '' })
+    }
+
+    let hypothesis = {}
+    let question = ''
+    const content = data.choices?.[0]?.message?.content?.trim() || ''
+    try {
+      const j = JSON.parse(content)
+      if (j.hypothesis) hypothesis = j.hypothesis
+      if (typeof j.question === 'string') question = j.question
+    } catch (e) {
+      question = content // fallback
+    }
+
+    return NextResponse.json({ hypothesis, question })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ hypothesis: {}, question: '' }, { status: 500 })
+  }
+}
+
+(B) next-question: src/app/api/ai/next-question/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { currentHypothesis, userAnswer, currentQuestion } = body
+
+    const prompt = `
+今の仮説: ${JSON.stringify(currentHypothesis)}
+前の質問: "${currentQuestion}"
+ユーザー回答: "${userAnswer}"
+
+これを踏まえて仮説を更新し、次の質問を1つ提案してください。
+もし情報が十分なら、questionを空文字にして終わってください。
+
+形式:
+{
+  "hypothesis": {...},
+  "question": "string"
+}
+    `
+
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 400,
+      }),
+    })
+
+    const data = await openaiRes.json()
+    if (!openaiRes.ok) {
+      console.error('OpenAI error:', data)
+      return NextResponse.json({ hypothesis: currentHypothesis, question: '' })
+    }
+
+    let hypothesis = currentHypothesis
+    let question = ''
+    const content = data.choices?.[0]?.message?.content?.trim() || ''
+    try {
+      const j = JSON.parse(content)
+      if (j.hypothesis) hypothesis = j.hypothesis
+      if (typeof j.question === 'string') question = j.question
+    } catch (e) {
+      question = content // fallback
+    }
+
+    return NextResponse.json({ hypothesis, question })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ hypothesis: {}, question: '' }, { status: 500 })
+  }
+}
+
+(C) final-vision: src/app/api/ai/final-vision/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { finalHypothesis } = body
+
+    const prompt = `
+ここまでの仮説を見て、
+このユーザーが大事にしている価値観・ビジョンを
+キーメッセージ(一行)と詳細説明(数行)でまとめてください。
+
+仮説:
+${JSON.stringify(finalHypothesis, null, 2)}
+
+形式:
+{
+  "keyMessage": "string",
+  "details": "string"
+}
+    `
+
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 300,
+      }),
+    })
+
+    const data = await openaiRes.json()
+    if (!openaiRes.ok) {
+      console.error('OpenAI error:', data)
+      return NextResponse.json({ keyMessage: '', details: '' })
+    }
+
+    let keyMessage = ''
+    let details = ''
+    const content = data.choices?.[0]?.message?.content?.trim() || ''
+    try {
+      const j = JSON.parse(content)
+      if (typeof j.keyMessage === 'string') keyMessage = j.keyMessage
+      if (typeof j.details === 'string') details = j.details
+    } catch (e) {
+      // fallback
+      details = content
+    }
+
+    return NextResponse.json({ keyMessage, details })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ keyMessage: '', details: '' }, { status: 500 })
+  }
+}
+
+まとめ
+
+	•	これらのファイルを配置すれば、最小限の「問診票 → AI追加質問 → ビジョン生成」フローが動く。
+	•	ユーザー操作：
+	1.	/onboarding → Start
+	2.	/onboarding/questionnaire → 問診票にチェック
+	3.	/onboarding/additional → AIが初期仮説 → 1問ずつ質問表示
+	4.	質問が尽きる or AIが終了判定 → /onboarding/result
+	5.	/api/ai/final-vision に仮説を投げてビジョン出力
+	•	実際には：
+	•	UIをもう少し洗練
+	•	エラーハンドリングや型定義厳密化
+	•	データをDBに保存する or session管理にする
+	•	etc.
