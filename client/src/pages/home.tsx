@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Eye, ArrowRight, User } from "lucide-react";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
@@ -177,13 +178,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-50 py-8 px-4 mt-12">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} Life Vision App. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

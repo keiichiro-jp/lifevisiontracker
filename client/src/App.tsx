@@ -11,6 +11,9 @@ import BasicInfo from "@/pages/onboarding/basic-info";
 import Questionnaire from "@/pages/onboarding/questionnaire";
 import AIQuestions from "@/pages/onboarding/ai-questions";
 import Results from "@/pages/onboarding/results";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsOfService from "@/pages/terms-of-service";
+import Contact from "@/pages/contact";
 import { OnboardingProvider } from "./hooks/useOnboardingContext";
 
 function Router() {
@@ -19,6 +22,9 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/auth/signup" component={Signup} />
       <Route path="/auth/login" component={Login} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/contact" component={Contact} />
       
       {/* Onboarding routes - flattened approach */}
       <Route path="/onboarding">
