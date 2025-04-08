@@ -65,8 +65,10 @@ export default function Questionnaire() {
       return;
     }
     
+    console.log("Questionnaire data saved:", values);
     saveQuestionnaire(values);
-    navigate("/onboarding/ai-questions");
+    // Update step in context and navigate
+    data.step < 3 && navigate("/onboarding/ai-questions");
   };
 
   // Watch for changes to interests and challenges

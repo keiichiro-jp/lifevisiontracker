@@ -57,7 +57,7 @@ export default function AIQuestions() {
     }
   }, [currentQuestion, data.currentQuestionIndex]);
 
-  const handleAnswer = () => {
+  const handleAnswer = async () => {
     if (!isAnswerValid) {
       toast({
         title: "Please answer the question",
@@ -67,13 +67,26 @@ export default function AIQuestions() {
       return;
     }
 
-    saveAnswer(currentAnswer);
+    try {
+      console.log("Saving answer:", currentAnswer);
+      await saveAnswer(currentAnswer);
+      // No need to navigate - the saveAnswer function updates the current question index
+    } catch (error) {
+      console.error("Error saving answer:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process your answer. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleComplete = async () => {
     try {
+      console.log("Generating vision...");
       await generateVision();
-      navigate("/onboarding/results");
+      // Update step in context and navigate
+      data.step < 4 && navigate("/onboarding/results");
     } catch (error) {
       console.error("Error generating vision:", error);
       toast({

@@ -69,11 +69,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const saveBasicInfo = useCallback((basicInfo: BasicInfoData) => {
-    setData(prev => ({ ...prev, basicInfo }));
+    setData(prev => ({ ...prev, basicInfo, step: 2 }));
+    console.log("Basic info saved, step updated to 2");
   }, []);
 
   const saveQuestionnaire = useCallback((questionnaire: QuestionnaireData) => {
-    setData(prev => ({ ...prev, questionnaire }));
+    setData(prev => ({ ...prev, questionnaire, step: 3 }));
+    console.log("Questionnaire saved, step updated to 3");
   }, []);
 
   const initAIQuestions = useCallback(async () => {
@@ -183,8 +185,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setData(prev => ({
         ...prev,
         visionResults: result.visions,
-        keyMessage: result.keyMessage
+        keyMessage: result.keyMessage,
+        step: 4
       }));
+      console.log("Vision generated, step updated to 4");
     } catch (error) {
       console.error('Error generating vision:', error);
       toast({
