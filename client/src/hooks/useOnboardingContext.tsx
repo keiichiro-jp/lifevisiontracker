@@ -128,39 +128,53 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       // Get the current question
       const currentQuestion = data.aiQuestions[currentQuestionIndex];
 
-      // Prepare the request to get the next question
-      const requestData = {
-        currentHypothesis: data.hypothesis,
-        currentQuestion: currentQuestion.text,
-        userAnswer: answer
-      };
-
-      const response = await apiRequest('POST', '/api/ai/next-question', requestData);
-      const result = await response.json();
-
-      // If there's a new question to ask
-      if (result.questionData && !result.questionComplete) {
-        const newQuestion = {
-          id: result.questionData.id,
-          text: result.questionData.text,
-          selectionType: result.questionData.selectionType,
-          options: result.questionData.options
-        };
-
+      // Check if we've reached the maximum number of questions (10)
+      const MAX_QUESTIONS = 10;
+      
+      if (currentQuestionIndex + 1 >= MAX_QUESTIONS) {
+        // If we've already asked 10 questions, don't get more
+        console.log("Reached maximum number of questions (10). Moving to completion.");
         setData(prev => ({
           ...prev,
-          hypothesis: result.hypothesis,
-          aiQuestions: [...updatedQuestions, newQuestion],
-          currentQuestionIndex: prev.currentQuestionIndex + 1
-        }));
-      } else {
-        // If we've reached the end of the questions
-        setData(prev => ({
-          ...prev,
-          hypothesis: result.hypothesis,
           aiQuestions: updatedQuestions,
           currentQuestionIndex: prev.currentQuestionIndex + 1
         }));
+      } else {
+        // We can ask more questions, so get the next one
+        // Prepare the request to get the next question
+        const requestData = {
+          currentHypothesis: data.hypothesis,
+          currentQuestion: currentQuestion.text,
+          userAnswer: answer
+        };
+
+        const response = await apiRequest('POST', '/api/ai/next-question', requestData);
+        const result = await response.json();
+
+        // If there's a new question to ask
+        if (result.questionData && !result.questionComplete) {
+          const newQuestion = {
+            id: result.questionData.id,
+            text: result.questionData.text,
+            selectionType: result.questionData.selectionType,
+            options: result.questionData.options
+          };
+
+          setData(prev => ({
+            ...prev,
+            hypothesis: result.hypothesis,
+            aiQuestions: [...updatedQuestions, newQuestion],
+            currentQuestionIndex: prev.currentQuestionIndex + 1
+          }));
+        } else {
+          // If we've reached the end of the questions
+          setData(prev => ({
+            ...prev,
+            hypothesis: result.hypothesis,
+            aiQuestions: updatedQuestions,
+            currentQuestionIndex: prev.currentQuestionIndex + 1
+          }));
+        }
       }
     } catch (error) {
       console.error('Error saving answer:', error);

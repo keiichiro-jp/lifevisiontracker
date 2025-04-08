@@ -169,7 +169,7 @@ export default function AIQuestions() {
         {/* Question Counter */}
         <div className="mb-6 flex items-center justify-between">
           <span className="text-sm text-gray-500">
-            Question <span>{data.currentQuestionIndex + 1}</span> of <span>10</span>
+            Question <span>{data.currentQuestionIndex + 1}</span> of <span>{Math.min(10, data.aiQuestions.length)}</span>
           </span>
           <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-500">
             AI generated
