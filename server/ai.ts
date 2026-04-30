@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import type { Department, BusinessActivity, Competitor } from "@shared/schema";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const MODEL = "gpt-4o";
@@ -6,6 +7,91 @@ const MODEL = "gpt-4o";
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || "dummy-key-for-development"
 });
+
+export async function researchCompany(companyName: string) {
+  const prompt = `
+あなたは企業調査の専門家AIです。「${companyName}」について、以下の情報ソースを参考にして包括的な調査を行ってください。
+
+参考にするソース：
+1. 公式コーポレートサイト（企業概要、事業内容、組織情報）
+2. 求人情報（Indeed、求人ボックス、リクナビNEXT、マイナビ転職、LinkedIn等）
+3. IR・決算資料（有価証券報告書、決算説明資料）
+4. プレスリリース・ニュースリリース
+5. LinkedIn企業ページ
+6. 業界ニュース・メディア記事
+
+以下の構造化されたJSONを返してください。全て日本語で回答してください：
+
+{
+  "summary": "企業の概要説明（200字程度）",
+  "organizationStructure": {
+    "name": "会社名",
+    "description": "会社全体の説明",
+    "subDepartments": [
+      {
+        "name": "部門名（例：経営管理本部）",
+        "description": "部門の役割",
+        "subDepartments": [
+          {
+            "name": "部署名（例：財務経理部）",
+            "description": "部署の役割",
+            "roles": ["役職名1", "役職名2"]
+          }
+        ]
+      }
+    ]
+  },
+  "businessActivities": [
+    {
+      "name": "業務名",
+      "department": "担当部署",
+      "description": "業務の詳細説明",
+      "sourceUrl": "参照した想定URL（公式サイトや求人ページのURLパターン）",
+      "sourceType": "official_site | job_posting | ir_document | press_release | linkedin | news | other"
+    }
+  ],
+  "competitors": [
+    {
+      "name": "競合企業名",
+      "reason": "競合と判断した理由",
+      "industry": "業界・分野"
+    }
+  ],
+  "sources": [
+    {
+      "type": "ソース種別",
+      "description": "参照した情報源の説明",
+      "url": "想定URL"
+    }
+  ]
+}
+
+重要：
+- organizationStructureは実際の組織階層を反映した深い構造にしてください
+- businessActivitiesは求人情報も参考に、可能な限り詳細・網羅的にリストアップしてください（最低20件以上）
+- competitorsは上位3社を選定し、競合理由を明記してください
+- sourceTypeは必ず指定された値のいずれかを使用してください
+`;
+
+  const response = await openai.chat.completions.create({
+    model: MODEL,
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+    max_tokens: 4000,
+  });
+
+  const content = response.choices[0].message.content;
+  if (!content) throw new Error("OpenAI response was empty");
+
+  const data = JSON.parse(content);
+  return {
+    summary: data.summary as string,
+    organizationStructure: data.organizationStructure as Department,
+    businessActivities: data.businessActivities as BusinessActivity[],
+    competitors: data.competitors as Competitor[],
+    sources: data.sources as { type: string; description: string; url: string }[],
+  };
+}
 
 export async function generateInitialHypothesis(userData: any) {
   try {
