@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { Switch, Route } from "wouter";
+const CompanyResearchPage = React.lazy(() => import("@/pages/company-research/index"));
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -86,6 +87,13 @@ function Router() {
         </OnboardingLayout>
       </Route>
       
+      {/* Company research tool */}
+      <Route path="/company-research">
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">読み込み中...</div>}>
+          <CompanyResearchPage />
+        </Suspense>
+      </Route>
+
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

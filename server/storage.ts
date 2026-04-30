@@ -1,10 +1,11 @@
 import {
-  users, visionData, sharedVisions, visionComments, visionLikes,
-  type User, type InsertUser, 
+  users, visionData, sharedVisions, visionComments, visionLikes, companyResearch,
+  type User, type InsertUser,
   type VisionData, type InsertVisionData,
   type SharedVision, type InsertSharedVision,
   type VisionComment, type InsertVisionComment,
-  type VisionLike, type InsertVisionLike
+  type VisionLike, type InsertVisionLike,
+  type CompanyResearchRecord, type InsertCompanyResearch
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, isNull } from "drizzle-orm";
@@ -39,6 +40,12 @@ export interface IStorage {
   deleteVisionLike(sharedVisionId: number, userId: number): Promise<void>;
   hasUserLikedVision(sharedVisionId: number, userId: number): Promise<boolean>;
   updateSharedVisionLikeCount(sharedVisionId: number): Promise<void>;
+
+  // Company research methods
+  createCompanyResearch(data: InsertCompanyResearch): Promise<CompanyResearchRecord>;
+  getCompanyResearchHistory(limit?: number): Promise<CompanyResearchRecord[]>;
+  getCompanyResearchById(id: number): Promise<CompanyResearchRecord | undefined>;
+  deleteCompanyResearch(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -186,20 +193,48 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateSharedVisionLikeCount(sharedVisionId: number): Promise<void> {
-    // Count the number of likes for this vision
     const result = await db
       .select({ count: sql`count(*)` })
       .from(visionLikes)
       .where(eq(visionLikes.sharedVisionId, sharedVisionId));
-    
-    // Convert the count to a number (it comes as string or bigint from PostgreSQL)
+
     const likeCount = parseInt(String(result[0].count), 10);
-    
-    // Update the likes count in the shared visions table
+
     await db
       .update(sharedVisions)
       .set({ likes: likeCount })
       .where(eq(sharedVisions.id, sharedVisionId));
+  }
+
+  // Company research methods
+  async createCompanyResearch(data: InsertCompanyResearch): Promise<CompanyResearchRecord> {
+    const [result] = await db
+      .insert(companyResearch)
+      .values(data)
+      .returning();
+    return result;
+  }
+
+  async getCompanyResearchHistory(limit: number = 50): Promise<CompanyResearchRecord[]> {
+    return db
+      .select()
+      .from(companyResearch)
+      .orderBy(desc(companyResearch.createdAt))
+      .limit(limit);
+  }
+
+  async getCompanyResearchById(id: number): Promise<CompanyResearchRecord | undefined> {
+    const [result] = await db
+      .select()
+      .from(companyResearch)
+      .where(eq(companyResearch.id, id));
+    return result || undefined;
+  }
+
+  async deleteCompanyResearch(id: number): Promise<void> {
+    await db
+      .delete(companyResearch)
+      .where(eq(companyResearch.id, id));
   }
 }
 
