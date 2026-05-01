@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateInitialHypothesis, generateNextQuestion, generateFinalVision } from "./ai";
+import { researchCompany, researchCompetitor } from "./company-research";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
@@ -295,6 +296,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking like status:", error);
       res.status(500).json({ message: "Failed to check like status" });
+    }
+  });
+
+  // ===== Company Research Routes =====
+
+  // Start a new company research
+  app.post('/api/company-research', async (req, res) => {
+    try {
+      const { companyName } = req.body;
+      if (!companyName || typeof companyName !== 'string') {
+        return res.status(400).json({ message: "companyName is required" });
+      }
+      const aiResult = await researchCompany(companyName.trim());
+      const record = await storage.createCompanyResearch({
+        companyName: companyName.trim(),
+        officialName: aiResult.officialName || null,
+        industry: aiResult.industry || null,
+        summary: aiResult.summary || null,
+        organizationStructure: aiResult.organizationStructure || null,
+        businessOperations: aiResult.businessOperations || [],
+        competitors: aiResult.competitors || [],
+        sources: aiResult.sources || [],
+      });
+      res.status(201).json(record);
+    } catch (error) {
+      console.error("Error researching company:", error);
+      res.status(500).json({ message: "Failed to research company", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  // Research a competitor (one-click)
+  app.post('/api/company-research/competitor', async (req, res) => {
+    try {
+      const { competitorName, originalCompany } = req.body;
+      if (!competitorName || !originalCompany) {
+        return res.status(400).json({ message: "competitorName and originalCompany are required" });
+      }
+      const aiResult = await researchCompetitor(competitorName.trim(), originalCompany.trim());
+      const record = await storage.createCompanyResearch({
+        companyName: competitorName.trim(),
+        officialName: aiResult.officialName || null,
+        industry: aiResult.industry || null,
+        summary: aiResult.summary || null,
+        organizationStructure: aiResult.organizationStructure || null,
+        businessOperations: aiResult.businessOperations || [],
+        competitors: aiResult.competitors || [],
+        sources: aiResult.sources || [],
+      });
+      res.status(201).json(record);
+    } catch (error) {
+      console.error("Error researching competitor:", error);
+      res.status(500).json({ message: "Failed to research competitor", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  // Get research history
+  app.get('/api/company-research', async (req, res) => {
+    try {
+      const list = await storage.getCompanyResearchList();
+      res.status(200).json(list);
+    } catch (error) {
+      console.error("Error getting research history:", error);
+      res.status(500).json({ message: "Failed to get research history" });
+    }
+  });
+
+  // Get single research record
+  app.get('/api/company-research/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const record = await storage.getCompanyResearchById(id);
+      if (!record) {
+        return res.status(404).json({ message: "Research not found" });
+      }
+      res.status(200).json(record);
+    } catch (error) {
+      console.error("Error getting research:", error);
+      res.status(500).json({ message: "Failed to get research" });
+    }
+  });
+
+  // Delete research record
+  app.delete('/api/company-research/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCompanyResearch(id);
+      res.status(200).json({ message: "Deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting research:", error);
+      res.status(500).json({ message: "Failed to delete research" });
     }
   });
 

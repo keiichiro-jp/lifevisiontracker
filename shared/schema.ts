@@ -50,6 +50,19 @@ export const visionLikes = pgTable("vision_likes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const companyResearch = pgTable("company_research", {
+  id: serial("id").primaryKey(),
+  companyName: text("company_name").notNull(),
+  officialName: text("official_name"),
+  industry: text("industry"),
+  summary: text("summary"),
+  organizationStructure: jsonb("organization_structure"),
+  businessOperations: jsonb("business_operations"),
+  competitors: jsonb("competitors"),
+  sources: jsonb("sources"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Types
 export type BasicInfo = {
   ageRange: string;
@@ -169,3 +182,38 @@ export type InsertVisionComment = z.infer<typeof insertVisionCommentSchema>;
 export type VisionComment = typeof visionComments.$inferSelect;
 export type InsertVisionLike = z.infer<typeof insertVisionLikeSchema>;
 export type VisionLike = typeof visionLikes.$inferSelect;
+export type CompanyResearch = typeof companyResearch.$inferSelect;
+
+export const insertCompanyResearchSchema = createInsertSchema(companyResearch).pick({
+  companyName: true,
+  officialName: true,
+  industry: true,
+  summary: true,
+  organizationStructure: true,
+  businessOperations: true,
+  competitors: true,
+  sources: true,
+});
+export type InsertCompanyResearch = z.infer<typeof insertCompanyResearchSchema>;
+
+export type OrgUnit = {
+  name: string;
+  type: 'division' | 'department' | 'team' | 'role';
+  description: string;
+  children?: OrgUnit[];
+};
+
+export type BusinessOperation = {
+  id: string;
+  department: string;
+  category: string;
+  title: string;
+  description: string;
+  sourceUrl?: string;
+};
+
+export type CompetitorInfo = {
+  name: string;
+  reason: string;
+  marketPosition: string;
+};

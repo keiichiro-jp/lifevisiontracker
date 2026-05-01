@@ -25,6 +25,7 @@ import PinterestCallback from "@/pages/auth/pinterest-callback";
 const CommunityPage = React.lazy(() => import("@/pages/community/index"));
 const CommunityVisionDetailPage = React.lazy(() => import("@/pages/community/vision/[id]"));
 const CommunitySharePage = React.lazy(() => import("@/pages/community/share"));
+const CompanyResearchPage = React.lazy(() => import("@/pages/company-research/index"));
 import { OnboardingProvider } from "./hooks/useOnboardingContext";
 
 function Router() {
@@ -59,6 +60,13 @@ function Router() {
         </Suspense>
       </Route>
       
+      {/* Company Research */}
+      <Route path="/company-research">
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">読み込み中...</div>}>
+          <CompanyResearchPage />
+        </Suspense>
+      </Route>
+
       {/* Onboarding routes - flattened approach */}
       <Route path="/onboarding">
         <OnboardingLayout>
