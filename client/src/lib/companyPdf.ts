@@ -27,10 +27,19 @@ type Source = {
   url: string;
 };
 
+type AIAgentSuggestion = {
+  name: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+  department: string;
+};
+
 type ResearchRecord = {
   companyName: string;
+  industryTag?: string | null;
   organizationStructure: Department;
   businessActivities: BusinessActivity[];
+  aiAgentSuggestions?: AIAgentSuggestion[] | null;
   competitors: Competitor[];
   summary: string | null;
   sources: Source[];
@@ -168,6 +177,10 @@ export function generateCompanyPDF(record: ResearchRecord) {
     year: "numeric", month: "long", day: "numeric",
   });
   doc.text(`調査日時: ${dateStr}`, 105, 54, { align: "center" });
+  if (record.industryTag) {
+    setFont(doc, "normal", 8, WHITE);
+    doc.text(record.industryTag, 105, 62, { align: "center" });
+  }
 
   // Summary box
   if (record.summary) {
@@ -279,6 +292,51 @@ export function generateCompanyPDF(record: ResearchRecord) {
 
     y += rowH + 1;
   });
+
+  // ---- AI Agent Suggestions ----
+  if (record.aiAgentSuggestions && record.aiAgentSuggestions.length > 0) {
+    if (y > pageH - 50) {
+      doc.addPage();
+      addPageHeader(doc, record.companyName);
+      y = 20;
+    }
+    y += 4;
+    y = addSectionTitle(doc, "AIエージェント活用提案", y);
+
+    const PRIORITY_COLORS: Record<string, readonly number[]> = {
+      high: [220, 38, 38],
+      medium: [217, 119, 6],
+      low: [22, 163, 74],
+    };
+    const PRIORITY_JP: Record<string, string> = { high: "優先度：高", medium: "優先度：中", low: "優先度：低" };
+
+    record.aiAgentSuggestions.forEach((sug, i) => {
+      if (y > pageH - 30) {
+        doc.addPage();
+        addPageHeader(doc, record.companyName);
+        y = 20;
+      }
+      const bgColor = i % 2 === 0 ? WHITE : LIGHT_GRAY;
+      rect(doc, marginX, y, contentW, 26, bgColor);
+
+      const priColor = PRIORITY_COLORS[sug.priority] ?? GRAY;
+      setFont(doc, "bold", 8, priColor as any);
+      const nameLines = splitText(doc, sug.name, contentW - 32);
+      doc.text(nameLines[0] ?? "", marginX + 3, y + 6);
+
+      setFont(doc, "normal", 6, GRAY);
+      doc.text(PRIORITY_JP[sug.priority] ?? "", marginX + contentW - 3, y + 6, { align: "right" });
+
+      setFont(doc, "normal", 7, DARK);
+      const descLines = splitText(doc, sug.description, contentW - 6);
+      doc.text(descLines.slice(0, 2), marginX + 3, y + 12);
+
+      setFont(doc, "normal", 6, GRAY);
+      doc.text(`対象: ${sug.department}`, marginX + 3, y + 23);
+
+      y += 28;
+    });
+  }
 
   // ---- Sources ----
   if (record.sources && record.sources.length > 0) {

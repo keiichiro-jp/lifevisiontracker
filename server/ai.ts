@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { Department, BusinessActivity, Competitor } from "@shared/schema";
+import type { Department, BusinessActivity, Competitor, AIAgentSuggestion } from "@shared/schema";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const MODEL = "gpt-4o";
@@ -14,26 +14,28 @@ export async function researchCompany(companyName: string) {
 
 参考にするソース：
 1. 公式コーポレートサイト（企業概要、事業内容、組織情報）
-2. 求人情報（Indeed、求人ボックス、リクナビNEXT、マイナビ転職、LinkedIn等）
-3. IR・決算資料（有価証券報告書、決算説明資料）
+2. 求人情報（Indeed、求人ボックス、リクナビNEXT、マイナビ転職、LinkedIn、Wantedly等）
+3. IR・決算資料（有価証券報告書、決算説明資料、統合レポート）
 4. プレスリリース・ニュースリリース
-5. LinkedIn企業ページ
-6. 業界ニュース・メディア記事
+5. OpenWork・Glassdoor・ビズリーチ等の口コミ・業界メディア
+6. LinkedInおよびその他企業情報サービス
 
 以下の構造化されたJSONを返してください。全て日本語で回答してください：
 
 {
-  "summary": "企業の概要説明（200字程度）",
+  "industryTag": "業界・業種を表す短いタグ（例：ITサービス・総合電機メーカー・システムインテグレーター）",
+  "summary": "企業の概要説明（300字程度）",
   "organizationStructure": {
-    "name": "会社名",
+    "name": "会社名（正式名称）",
     "description": "会社全体の説明",
     "subDepartments": [
       {
-        "name": "部門名（例：経営管理本部）",
-        "description": "部門の役割",
+        "name": "部門名（例：パブリックビジネス部門）",
+        "description": "部門の役割・担当領域",
+        "roles": ["部門長", "マネージャー", "主要な職種名"],
         "subDepartments": [
           {
-            "name": "部署名（例：財務経理部）",
+            "name": "部署名（例：公共システム部）",
             "description": "部署の役割",
             "roles": ["役職名1", "役職名2"]
           }
@@ -45,21 +47,29 @@ export async function researchCompany(companyName: string) {
     {
       "name": "業務名",
       "department": "担当部署",
-      "description": "業務の詳細説明",
-      "sourceUrl": "参照した想定URL（公式サイトや求人ページのURLパターン）",
+      "description": "業務の詳細説明（求人情報も参考に具体的に記述）",
+      "sourceUrl": "参照した想定URL",
       "sourceType": "official_site | job_posting | ir_document | press_release | linkedin | news | other"
+    }
+  ],
+  "aiAgentSuggestions": [
+    {
+      "name": "AIエージェント活用提案のタイトル",
+      "description": "この企業の業務・組織に特化した具体的なAIエージェント活用方法の説明（100〜150字）",
+      "priority": "high | medium | low",
+      "department": "主な対象部署"
     }
   ],
   "competitors": [
     {
-      "name": "競合企業名",
-      "reason": "競合と判断した理由",
+      "name": "競合企業名（正式名称）",
+      "reason": "競合と判断した具体的な理由",
       "industry": "業界・分野"
     }
   ],
   "sources": [
     {
-      "type": "ソース種別",
+      "type": "ソース種別の日本語表記",
       "description": "参照した情報源の説明",
       "url": "想定URL"
     }
@@ -67,10 +77,11 @@ export async function researchCompany(companyName: string) {
 }
 
 重要：
-- organizationStructureは実際の組織階層を反映した深い構造にしてください
-- businessActivitiesは求人情報も参考に、可能な限り詳細・網羅的にリストアップしてください（最低20件以上）
-- competitorsは上位3社を選定し、競合理由を明記してください
-- sourceTypeは必ず指定された値のいずれかを使用してください
+- organizationStructureはこの企業の実際の組織を反映し、5〜10の主要部門を含めてください
+- businessActivitiesは求人情報も参考に網羅的にリストアップしてください（最低20件）
+- aiAgentSuggestionsはこの企業の業種・業務・組織に具体的に特化した提案を4〜6件（priorityはhigh/medium/lowで分類）
+- competitorsは上位3社を選定し具体的な競合理由を記載してください
+- sourcesには実際に参照したと想定されるソース名・URLを6〜8件含めてください
 `;
 
   const response = await openai.chat.completions.create({
@@ -85,9 +96,11 @@ export async function researchCompany(companyName: string) {
 
   const data = JSON.parse(content);
   return {
+    industryTag: data.industryTag as string,
     summary: data.summary as string,
     organizationStructure: data.organizationStructure as Department,
     businessActivities: data.businessActivities as BusinessActivity[],
+    aiAgentSuggestions: data.aiAgentSuggestions as AIAgentSuggestion[],
     competitors: data.competitors as Competitor[],
     sources: data.sources as { type: string; description: string; url: string }[],
   };

@@ -53,8 +53,10 @@ export const visionLikes = pgTable("vision_likes", {
 export const companyResearch = pgTable("company_research", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").notNull(),
+  industryTag: text("industry_tag"),
   organizationStructure: jsonb("organization_structure").notNull(),
   businessActivities: jsonb("business_activities").notNull(),
+  aiAgentSuggestions: jsonb("ai_agent_suggestions"),
   competitors: jsonb("competitors").notNull(),
   summary: text("summary"),
   sources: jsonb("sources").notNull(),
@@ -83,6 +85,13 @@ export type Competitor = {
   name: string;
   reason: string;
   industry: string;
+};
+
+export type AIAgentSuggestion = {
+  name: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+  department: string;
 };
 
 // Types

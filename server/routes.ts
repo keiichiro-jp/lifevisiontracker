@@ -310,8 +310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const record = await storage.createCompanyResearch({
         companyName: companyName.trim(),
+        industryTag: result.industryTag ?? null,
         organizationStructure: result.organizationStructure as any,
         businessActivities: result.businessActivities as any,
+        aiAgentSuggestions: result.aiAgentSuggestions as any ?? null,
         competitors: result.competitors as any,
         summary: result.summary,
         sources: result.sources as any,

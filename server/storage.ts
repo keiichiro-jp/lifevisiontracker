@@ -310,7 +310,14 @@ class MemoryStorage implements IStorage {
     if (rec) rec.likes = count;
   }
   async createCompanyResearch(data: InsertCompanyResearch): Promise<CompanyResearchRecord> {
-    const rec: CompanyResearchRecord = { id: this.id(), summary: null, createdAt: new Date(), ...data } as any;
+    const rec: CompanyResearchRecord = {
+      id: this.id(),
+      summary: null,
+      industryTag: null,
+      aiAgentSuggestions: null,
+      createdAt: new Date(),
+      ...data,
+    } as any;
     this.researches.unshift(rec);
     return rec;
   }
