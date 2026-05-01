@@ -1,8 +1,7 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 
-// Create neon client
-const sql = neon(process.env.DATABASE_URL!);
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL must be set");
+}
 
-// Create drizzle database instance
-export const db = drizzle(sql);
+export const db = drizzle(process.env.DATABASE_URL);

@@ -50,10 +50,8 @@ export default function ShareVisionPage() {
   const [isPublic, setIsPublic] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 現在のユーザーのビジョンデータを取得（実際の実装では認証済みユーザーのIDを使用）
-  const userId = 1; // 仮のユーザーID
   const { data: visionData, isLoading } = useQuery({
-    queryKey: [`/api/vision/${userId}`],
+    queryKey: ["/api/vision/me"],
     queryFn: async ({ queryKey }) => {
       const response = await apiRequest("GET", queryKey[0] as string);
       if (response.status === 404) {
@@ -64,7 +62,7 @@ export default function ShareVisionPage() {
   });
 
   const visionResults = visionData?.visionResults as VisionResult[] || null;
-  const keyMessage = visionData?.basicInfo?.keyMessage as string || null;
+  const keyMessage = visionData?.keyMessage as string || null;
 
   // ビジョン共有処理
   const handleShareVision = async () => {
@@ -89,13 +87,11 @@ export default function ShareVisionPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await apiRequest("POST", "/api/community/share", {
+      const response = await apiRequest("POST", "/api/community/visions", {
+        visionId: visionData.id,
         title,
-        description,
-        tags,
-        isPublic,
-        visionResults,
-        keyMessage
+        keyMessage,
+        visionSummary: visionResults
       });
 
       const data = await response.json();
@@ -106,7 +102,7 @@ export default function ShareVisionPage() {
       });
 
       // 詳細ページに移動
-      setLocation(`/community/vision/${data.visionId}`);
+      setLocation(`/community/vision/${data.id}`);
     } catch (error) {
       console.error("Error sharing vision:", error);
       toast({

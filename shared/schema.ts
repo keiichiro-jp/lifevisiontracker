@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -48,7 +48,12 @@ export const visionLikes = pgTable("vision_likes", {
   sharedVisionId: integer("shared_vision_id").notNull(),
   userId: integer("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  uniqueUserVisionLike: uniqueIndex("vision_likes_shared_vision_id_user_id_idx").on(
+    table.sharedVisionId,
+    table.userId,
+  ),
+}));
 
 // Types
 export type BasicInfo = {
@@ -94,6 +99,7 @@ export const insertVisionDataSchema = createInsertSchema(visionData).pick({
   questionnaire: true,
   aiQuestions: true,
   visionResults: true,
+  keyMessage: true,
   createdAt: true,
 });
 

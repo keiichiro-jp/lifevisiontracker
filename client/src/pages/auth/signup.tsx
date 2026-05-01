@@ -58,7 +58,7 @@ export default function Signup() {
       console.error("Signup error:", error);
       toast({
         title: "Error",
-        description: error.message || "Could not create account. Please try again.",
+        description: error instanceof Error ? error.message : "Could not create account. Please try again.",
         variant: "destructive"
       });
     } finally {
