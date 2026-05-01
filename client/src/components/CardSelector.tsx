@@ -24,17 +24,18 @@ export default function CardSelector({
   multiple = false,
   columns = 2,
 }: CardSelectorProps) {
+  const normalizeSelected = (value: string | string[]) =>
+    Array.isArray(value) ? value : value ? [value] : [];
+
   // Convert selected to array for easier handling
   const [selectedValues, setSelectedValues] = useState<string[]>(
-    multiple ? (Array.isArray(selected) ? selected : []) : selected ? [selected] : []
+    normalizeSelected(selected)
   );
 
   // Update internal state when selected prop changes
   useEffect(() => {
-    setSelectedValues(
-      multiple ? (Array.isArray(selected) ? selected : []) : selected ? [selected] : []
-    );
-  }, [selected, multiple]);
+    setSelectedValues(normalizeSelected(selected));
+  }, [selected]);
 
   const handleSelect = (value: string) => {
     let newSelected: string[];

@@ -7,7 +7,7 @@ import {
   type VisionLike, type InsertVisionLike
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, isNull } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -17,9 +17,11 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserPassword(id: number, password: string): Promise<void>;
   
   // Vision data methods
   createVisionData(data: InsertVisionData): Promise<VisionData>;
+  getVisionDataById(id: number): Promise<VisionData | undefined>;
   getVisionDataByUserId(userId: number): Promise<VisionData | undefined>;
   updateVisionPublicStatus(id: number, isPublic: boolean): Promise<VisionData>;
   
@@ -60,6 +62,13 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return user;
   }
+
+  async updateUserPassword(id: number, password: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ password })
+      .where(eq(users.id, id));
+  }
   
   // Vision data methods
   async createVisionData(data: InsertVisionData): Promise<VisionData> {
@@ -68,6 +77,14 @@ export class DatabaseStorage implements IStorage {
       .values(data)
       .returning();
     return result;
+  }
+
+  async getVisionDataById(id: number): Promise<VisionData | undefined> {
+    const [result] = await db
+      .select()
+      .from(visionData)
+      .where(eq(visionData.id, id));
+    return result || undefined;
   }
 
   async getVisionDataByUserId(userId: number): Promise<VisionData | undefined> {

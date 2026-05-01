@@ -5,9 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { TagInput } from "@/components/ui/tag-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ArrowLeft, Share } from "lucide-react";
@@ -20,51 +17,31 @@ interface VisionResult {
   content: string;
 }
 
-function TagInputComponent({ 
-  value, 
-  onChange, 
-  placeholder = "タグを入力してEnterを押す" 
-}: { 
-  value: string[]; 
-  onChange: (tags: string[]) => void; 
-  placeholder?: string;
-}) {
-  return (
-    <TagInput
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      maxTags={10}
-    />
-  );
-}
-
 export default function ShareVisionPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
   // フォームの状態
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [isPublic, setIsPublic] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 現在のユーザーのビジョンデータを取得（実際の実装では認証済みユーザーのIDを使用）
-  const userId = 1; // 仮のユーザーID
   const { data: visionData, isLoading } = useQuery({
-    queryKey: [`/api/vision/${userId}`],
+    queryKey: ["/api/vision/me"],
     queryFn: async ({ queryKey }) => {
-      const response = await apiRequest("GET", queryKey[0] as string);
-      if (response.status === 404) {
-        return null;
+      try {
+        const response = await apiRequest("GET", queryKey[0] as string);
+        return response.json();
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("404:")) {
+          return null;
+        }
+        throw error;
       }
-      return response.json();
     }
   });
 
   const visionResults = visionData?.visionResults as VisionResult[] || null;
-  const keyMessage = visionData?.basicInfo?.keyMessage as string || null;
+  const keyMessage = visionData?.keyMessage as string || null;
 
   // ビジョン共有処理
   const handleShareVision = async () => {
@@ -89,13 +66,11 @@ export default function ShareVisionPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await apiRequest("POST", "/api/community/share", {
+      const response = await apiRequest("POST", "/api/community/visions", {
+        visionId: visionData.id,
         title,
-        description,
-        tags,
-        isPublic,
-        visionResults,
-        keyMessage
+        keyMessage,
+        visionSummary: visionResults
       });
 
       const data = await response.json();
@@ -106,7 +81,7 @@ export default function ShareVisionPage() {
       });
 
       // 詳細ページに移動
-      setLocation(`/community/vision/${data.visionId}`);
+      setLocation(`/community/vision/${data.id}`);
     } catch (error) {
       console.error("Error sharing vision:", error);
       toast({
@@ -162,35 +137,6 @@ export default function ShareVisionPage() {
                       onChange={(e) => setTitle(e.target.value)}
                       required
                     />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="description">説明</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="あなたのビジョンについて詳しく教えてください"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="tags">タグ</Label>
-                    <TagInputComponent
-                      value={tags}
-                      onChange={setTags}
-                      placeholder="タグを追加（例：キャリア、自己成長、家族）"
-                    />
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="public"
-                      checked={isPublic}
-                      onCheckedChange={setIsPublic}
-                    />
-                    <Label htmlFor="public">公開する</Label>
                   </div>
                   
                   <Button 

@@ -205,6 +205,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         keyMessage: result.keyMessage,
         step: 4
       }));
+      await apiRequest('POST', '/api/vision', {
+        basicInfo: data.basicInfo,
+        questionnaire: data.questionnaire,
+        aiQuestions: data.aiQuestions,
+        visionResults: result.visions,
+        keyMessage: result.keyMessage,
+        createdAt: new Date().toISOString(),
+      });
       console.log("Vision generated, step updated to 4");
     } catch (error) {
       console.error('Error generating vision:', error);
@@ -216,7 +224,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [data.hypothesis, toast]);
+  }, [data.aiQuestions, data.basicInfo, data.hypothesis, data.questionnaire, toast]);
 
   // Consider question 10 (index 9) as the last question, regardless of API response
   const MAX_QUESTIONS = 9;

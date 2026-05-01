@@ -14,26 +14,20 @@ import { Eye, Heart, MessageSquare, Plus, Search, Calendar, TrendingUp } from "l
 interface SharedVision {
   id: number;
   userId: number;
+  visionId: number;
   title: string;
-  description: string;
-  visionData: string;
-  isPublic: boolean;
+  keyMessage: string;
+  visionSummary: VisionResult[];
   views: number;
   likes: number;
   createdAt: string;
-  username: string;
 }
 
-// ビジョンデータの型定義
-interface ParsedVisionData {
-  keyMessage: string;
-  visionResults: {
-    category: string;
-    title: string;
-    color: string;
-    content: string;
-  }[];
-  tags: string[];
+interface VisionResult {
+  category: string;
+  title: string;
+  color: string;
+  content: string;
 }
 
 export default function CommunityPage() {
@@ -53,11 +47,15 @@ export default function CommunityPage() {
 
   // 検索フィルター
   const filteredVisions = data?.filter(vision => {
-    const visionData = JSON.parse(vision.visionData) as ParsedVisionData;
+    const query = searchQuery.toLowerCase();
     return (
-      vision.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vision.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      visionData.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      vision.title.toLowerCase().includes(query) ||
+      vision.keyMessage.toLowerCase().includes(query) ||
+      vision.visionSummary.some(item =>
+        item.category.toLowerCase().includes(query) ||
+        item.title.toLowerCase().includes(query) ||
+        item.content.toLowerCase().includes(query)
+      )
     );
   });
 
@@ -131,29 +129,28 @@ export default function CommunityPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredVisions?.map((vision) => {
-            const visionData = JSON.parse(vision.visionData) as ParsedVisionData;
             return (
               <Link key={vision.id} href={`/community/vision/${vision.id}`}>
                 <Card className="h-full cursor-pointer hover:shadow-md transition-shadow duration-300">
                   <CardHeader>
                     <CardTitle className="line-clamp-2">{vision.title}</CardTitle>
                     <CardDescription className="flex items-center gap-1">
-                      <span>by {vision.username || "匿名ユーザー"}</span>
+                      <span>by ユーザー #{vision.userId}</span>
                       <span>•</span>
                       <span>{new Date(vision.createdAt).toLocaleDateString()}</span>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="line-clamp-3 mb-4">{vision.description || visionData.keyMessage}</p>
+                    <p className="line-clamp-3 mb-4">{vision.keyMessage}</p>
                     <div className="flex flex-wrap gap-1.5 mt-auto">
-                      {visionData.tags?.slice(0, 3).map((tag, index) => (
+                      {vision.visionSummary?.slice(0, 3).map((item, index) => (
                         <Badge key={index} variant="secondary" className="px-2 py-0.5 text-xs font-normal">
-                          {tag}
+                          {item.category}
                         </Badge>
                       ))}
-                      {visionData.tags?.length > 3 && (
+                      {vision.visionSummary?.length > 3 && (
                         <Badge variant="outline" className="px-2 py-0.5 text-xs font-normal">
-                          +{visionData.tags.length - 3}
+                          +{vision.visionSummary.length - 3}
                         </Badge>
                       )}
                     </div>

@@ -31,16 +31,11 @@ interface SharedVision {
   id: number;
   userId: number;
   title: string;
-  description: string;
-  visionData: string;
-  tags: string[];
+  keyMessage: string;
+  visionSummary: VisionResult[];
   likes: number;
   views: number;
-  commentCount: number;
   createdAt: string;
-  updatedAt: string;
-  isPublic: boolean;
-  username: string;
   hasUserLiked?: boolean;
 }
 
@@ -66,7 +61,6 @@ interface Comment {
   sharedVisionId: number;
   content: string;
   createdAt: string;
-  username: string;
 }
 
 export default function VisionDetailPage() {
@@ -81,24 +75,36 @@ export default function VisionDetailPage() {
 
   // ビジョン詳細を取得
   const { data, isLoading, error } = useQuery({
-    queryKey: [`/api/community/vision/${visionId}`],
+    queryKey: [`/api/community/visions/${visionId}`],
     queryFn: async ({ queryKey }) => {
       const response = await apiRequest("GET", queryKey[0] as string);
       const data = await response.json();
-      
-      // visionDataをパース
-      if (data.vision?.visionData) {
-        data.vision.parsedVisionData = JSON.parse(data.vision.visionData) as ParsedVisionData;
-      }
-      
-      return data.vision as SharedVision & { parsedVisionData: ParsedVisionData };
+
+      const vision = data.vision as SharedVision;
+      return {
+        ...vision,
+        parsedVisionData: {
+          keyMessage: vision.keyMessage,
+          visionResults: vision.visionSummary,
+          tags: vision.visionSummary.map((item) => item.category),
+        },
+      } as SharedVision & { parsedVisionData: ParsedVisionData };
+    },
+    enabled: !!visionId && !isNaN(visionId)
+  });
+
+  const { data: likeData } = useQuery({
+    queryKey: [`/api/community/visions/${visionId}/like`],
+    queryFn: async ({ queryKey }) => {
+      const response = await apiRequest("GET", queryKey[0] as string);
+      return response.json() as Promise<{ liked: boolean }>;
     },
     enabled: !!visionId && !isNaN(visionId)
   });
 
   // コメント一覧を取得
   const { data: commentsData, isLoading: isLoadingComments } = useQuery({
-    queryKey: [`/api/community/vision/${visionId}/comments`],
+    queryKey: [`/api/community/visions/${visionId}/comments`],
     queryFn: async ({ queryKey }) => {
       const response = await apiRequest("GET", queryKey[0] as string);
       const data = await response.json();
@@ -110,15 +116,13 @@ export default function VisionDetailPage() {
   // いいねのミューテーション
   const likeMutation = useMutation({
     mutationFn: async () => {
-      const userId = 1; // 仮のユーザーID（実際の実装では認証済みユーザーのIDを使用）
-      await apiRequest("POST", `/api/community/vision/${visionId}/like`, { 
-        userId 
-      });
+      await apiRequest("POST", `/api/community/visions/${visionId}/like`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/community/vision/${visionId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/community/visions/${visionId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/community/visions/${visionId}/like`] });
       
-      if (data?.hasUserLiked) {
+      if (likeData?.liked) {
         toast({
           description: "いいねを取り消しました"
         });
@@ -140,14 +144,12 @@ export default function VisionDetailPage() {
   // コメント投稿のミューテーション
   const commentMutation = useMutation({
     mutationFn: async () => {
-      const userId = 1; // 仮のユーザーID（実際の実装では認証済みユーザーのIDを使用）
-      await apiRequest("POST", `/api/community/vision/${visionId}/comment`, { 
-        userId,
+      await apiRequest("POST", `/api/community/visions/${visionId}/comments`, { 
         content: comment
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/community/vision/${visionId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/community/visions/${visionId}/comments`] });
       setComment("");
       toast({
         description: "コメントが投稿されました"
@@ -240,9 +242,9 @@ export default function VisionDetailPage() {
             <div className="flex flex-wrap items-center text-muted-foreground gap-2 mb-4">
               <span className="flex items-center">
                 <Avatar className="h-6 w-6 mr-2">
-                  <AvatarFallback>{data.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                <AvatarFallback>U</AvatarFallback>
                 </Avatar>
-                {data.username || "匿名ユーザー"}
+                匿名ユーザー
               </span>
               <span>•</span>
               <span>{new Date(data.createdAt).toLocaleDateString()}</span>
@@ -267,13 +269,13 @@ export default function VisionDetailPage() {
             
             <div className="flex flex-wrap gap-2 mb-6">
               <Button 
-                variant={data.hasUserLiked ? "default" : "outline"} 
+                variant={likeData?.liked ? "default" : "outline"} 
                 size="sm"
                 onClick={() => likeMutation.mutate()}
                 disabled={likeMutation.isPending}
               >
-                <Heart className={`h-4 w-4 mr-2 ${data.hasUserLiked ? "fill-primary-foreground" : ""}`} />
-                {data.hasUserLiked ? "いいね済み" : "いいね"}
+                <Heart className={`h-4 w-4 mr-2 ${likeData?.liked ? "fill-primary-foreground" : ""}`} />
+                {likeData?.liked ? "いいね済み" : "いいね"}
               </Button>
 
               <DropdownMenu>
@@ -325,14 +327,6 @@ export default function VisionDetailPage() {
             </TabsList>
             
             <TabsContent value="vision" className="space-y-4">
-              {data.description && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <p>{data.description}</p>
-                  </CardContent>
-                </Card>
-              )}
-              
               {data.parsedVisionData.keyMessage && (
                 <Card>
                   <CardHeader>
@@ -408,11 +402,11 @@ export default function VisionDetailPage() {
                       commentsData?.map((comment) => (
                         <div key={comment.id} className="flex gap-3 pb-4 border-b">
                           <Avatar>
-                            <AvatarFallback>{comment.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                            <AvatarFallback>U</AvatarFallback>
                           </Avatar>
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <p className="font-medium">{comment.username || "匿名ユーザー"}</p>
+                              <p className="font-medium">匿名ユーザー</p>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(comment.createdAt).toLocaleDateString()}
                               </span>
