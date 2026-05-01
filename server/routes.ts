@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Vision data routes
   app.post('/api/vision', requireAuth, async (req, res) => {
     try {
-      const { basicInfo, questionnaire, aiQuestions, visionResults, createdAt } = req.body;
+      const { basicInfo, questionnaire, aiQuestions, visionResults, keyMessage, createdAt } = req.body;
       
       const visionData = await storage.createVisionData({
         userId: req.session.userId!,
@@ -133,6 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         questionnaire,
         aiQuestions,
         visionResults,
+        keyMessage,
         createdAt
       });
       
