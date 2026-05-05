@@ -43,6 +43,7 @@ export interface Database {
           is_active?: boolean;
           updated_at?: string;
         };
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -76,6 +77,15 @@ export interface Database {
           onboarded_at?: string | null;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       scenarios: {
         Row: {
@@ -108,6 +118,15 @@ export interface Database {
           is_pinned?: boolean;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "scenarios_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       chat_sessions: {
         Row: {
@@ -132,6 +151,22 @@ export interface Database {
           title?: string | null;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_scenario_id_fkey";
+            columns: ["scenario_id"];
+            isOneToOne: false;
+            referencedRelation: "scenarios";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chat_sessions_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       chat_messages: {
         Row: {
@@ -148,7 +183,21 @@ export interface Database {
           content: string;
           created_at?: string;
         };
-        Update: never;
+        Update: {
+          id?: string;
+          session_id?: string;
+          role?: string;
+          content?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "chat_sessions";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       signup_allowlist: {
         Row: {
@@ -163,12 +212,23 @@ export interface Database {
           role?: string;
           created_at?: string;
         };
-        Update: never;
+        Update: {
+          email?: string;
+          tenant_id?: string | null;
+          role?: string;
+        };
+        Relationships: [];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
   };
 }
 

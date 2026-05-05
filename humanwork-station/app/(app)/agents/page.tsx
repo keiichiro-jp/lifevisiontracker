@@ -4,29 +4,32 @@ import { Plus, Bot, Play, Pencil, Pin } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { ScenarioConfig } from "@/lib/supabase/types";
+import type { Profile, Scenario, ScenarioConfig } from "@/lib/supabase/types";
 
 export default async function AgentsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
+  const { data: profileData } = await supabase
     .from("profiles")
-    .select("*, tenants(*)")
+    .select("*")
     .eq("id", user.id)
     .single();
 
+  const profile = profileData as Profile | null;
   if (!profile?.onboarded_at) redirect("/onboarding");
 
-  const { data: scenarios } = await supabase
+  const { data: scenariosData } = await supabase
     .from("scenarios")
     .select("*")
     .eq("tenant_id", profile.tenant_id)
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
-  const agents = scenarios ?? [];
+  const scenarios = scenariosData as Scenario[] | null;
+
+  const agents: Scenario[] = scenarios ?? [];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
