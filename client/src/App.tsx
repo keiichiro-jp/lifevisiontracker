@@ -21,6 +21,9 @@ import PinterestAuth from "@/pages/pinterest/auth";
 import PinterestBoards from "@/pages/pinterest/boards";
 import PinterestCallback from "@/pages/auth/pinterest-callback";
 
+// HumanWork Station
+const HumanWorkStation = React.lazy(() => import("@/pages/humanwork-station"));
+
 // コミュニティページの動的インポート
 const CommunityPage = React.lazy(() => import("@/pages/community/index"));
 const CommunityVisionDetailPage = React.lazy(() => import("@/pages/community/vision/[id]"));
@@ -32,6 +35,11 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/humanwork-station">
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">読み込み中...</div>}>
+          <HumanWorkStation />
+        </Suspense>
+      </Route>
       <Route path="/auth/signup" component={Signup} />
       <Route path="/auth/login" component={Login} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
