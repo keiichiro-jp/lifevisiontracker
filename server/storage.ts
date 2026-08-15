@@ -6,7 +6,7 @@ import {
   type VisionComment, type InsertVisionComment,
   type VisionLike, type InsertVisionLike,
   type CompanyResearch, type InsertCompanyResearch,
-} from "@shared/schema";
+} from "../shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, isNull } from "drizzle-orm";
 

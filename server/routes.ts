@@ -1,11 +1,14 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateInitialHypothesis, generateNextQuestion, generateFinalVision } from "./ai";
 import { researchCompany, researchCompetitor } from "./company-research";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+// Registers every API route on the given Express app and nothing else.
+// It must not create or listen on an HTTP server: the local entrypoint
+// (server/index.ts) owns the listener, while on Vercel (api/index.ts) the
+// platform owns it and only the bare app is exported.
+export function registerRoutes(app: Express): void {
   // Auth routes
   app.post('/api/auth/register', async (req, res) => {
     try {
@@ -388,8 +391,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete research" });
     }
   });
-
-  const httpServer = createServer(app);
-
-  return httpServer;
 }
